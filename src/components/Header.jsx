@@ -4,6 +4,7 @@ import { Button } from './ui/Button'
 import { useState, useEffect, useRef } from 'react'
 import { useCart } from '../context/CartContext'
 import { tracker } from '../utils/eventTracker'
+import { API_BASE } from '../config/api'
 
 export function Header() {
   const navigate = useNavigate()
