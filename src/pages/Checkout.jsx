@@ -73,12 +73,12 @@ export function Checkout() {
       const orderData = {
         user_email: formData.email,
         items: cart.map(item => ({
-          product_id: item.id,
+          product_id: String(item.id),
           name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          department: item.department,
-          image_url: item.image_url
+          price: Number(item.price),
+          quantity: Number(item.quantity),
+          department: item.department || 'General',
+          image_url: item.image_url || 'https://placehold.co/400'
         })),
         total: cartTotal,
         shipping_address: {
@@ -147,24 +147,6 @@ export function Checkout() {
           </div>
           <p className="text-sm text-gray-500" style={{animation: 'fadeInUp 1s ease-out 1.4s both'}}>Redirecting to products...</p>
         </div>
-        
-        <style jsx>{`
-          @keyframes checkmark {
-            0% { transform: scale(0) rotate(0deg); opacity: 0; }
-            50% { transform: scale(1.2) rotate(180deg); opacity: 1; }
-            100% { transform: scale(1) rotate(360deg); opacity: 1; }
-          }
-          
-          @keyframes ripple {
-            0% { transform: scale(0.8); opacity: 1; }
-            100% { transform: scale(2); opacity: 0; }
-          }
-          
-          @keyframes fadeInUp {
-            0% { transform: translateY(30px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-          }
-        `}</style>
       </div>
     )
   }
