@@ -169,8 +169,6 @@ class EventTracker {
       }
     } catch (error) {
       console.warn('Event tracking error (non-critical):', error.message)
-    if (DISABLE_TRACKING) return
-    
     }
   }
 
