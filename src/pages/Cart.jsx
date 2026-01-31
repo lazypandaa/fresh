@@ -26,7 +26,7 @@ const flattenBundlesToProducts = (bundles, cart) => {
 
 
 export function Cart() {
-  const { cart, removeFromCart, updateQuantity, cartTotal } = useCart()
+  const { cart, addToCart, removeFromCart, updateQuantity, cartTotal } = useCart()
   const navigate = useNavigate()
 
   const [recommendedBundles, setRecommendedBundles] = useState([])
@@ -82,6 +82,20 @@ export function Cart() {
 
     fetchRecommendations()
   }, [cart])
+
+  const handleAddRecommended = (product) => {
+    console.log('Adding recommended product:', product)
+    const productToAdd = {
+      id: product.product_id,
+      name: product.name,
+      price: product.price ?? 0,
+      image_url: product.image_url,
+      quantity: 1,
+      department: product.department ?? 'recommended'
+    }
+    console.log('Transformed product:', productToAdd)
+    addToCart(productToAdd)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -168,7 +182,7 @@ export function Cart() {
 
                     <Button
                       size="sm"
-                      onClick={() => addToCart(product)}
+                      onClick={() => handleAddRecommended(product)}
                     >
                       Add
                     </Button>
