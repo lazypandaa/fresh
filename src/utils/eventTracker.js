@@ -1,5 +1,8 @@
 import { API_BASE } from '../config/api.js'
 
+// Disable tracking if experiencing issues (set to false to enable)
+const DISABLE_TRACKING = true
+
 class EventTracker {
   constructor() {
     // this.sessionId = this.generateSessionId()
@@ -9,7 +12,9 @@ class EventTracker {
     this.cartState = { items: 0, value: 0 }
     this.updateUserId()
     // Don't init session immediately - wait for user state to be determined
-    setTimeout(() => this.initSession(), 100)
+    if (!DISABLE_TRACKING) {
+      setTimeout(() => this.initSession(), 100)
+    }
   }
 
   generateSessionId() {
@@ -54,6 +59,8 @@ class EventTracker {
   }
 
   async initSession() {
+    if (DISABLE_TRACKING) return
+    
     try {
       const userId = this.getUserId()
       const isLoggedIn = !userId.startsWith('anonymous_')
@@ -62,7 +69,7 @@ class EventTracker {
       console.log('Session init - userId:', userId, 'isLoggedIn:', isLoggedIn, 'sending:', finalUserId)
       
       // Use the working events endpoint
-      await fetch(`${API_BASE}/events/track`, {
+      const response = await fetch(`${API_BASE}/events/track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -79,13 +86,21 @@ class EventTracker {
         })
       })
       
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error')
+        console.warn(`Session init failed (${response.status}):`, errorText)
+        return
+      }
+      
       console.log(`Session started: ${this.sessionId} for user: ${userId} (${isLoggedIn ? 'logged in' : 'anonymous'})`)
     } catch (error) {
-      console.error('Session init error:', error)
+      console.warn('Session init error (non-critical):', error.message)
     }
   }
 
   async trackSession(action, data = {}) {
+    if (DISABLE_TRACKING) return
+    
     try {
       const userId = this.getUserId()
       const isLoggedIn = !userId.startsWith('anonymous_')
@@ -94,7 +109,7 @@ class EventTracker {
       console.log(`Tracking session via events: ${action} for user: ${userId} (sending: ${finalUserId})`)
       
       // Use the working events endpoint instead
-      await fetch(`${API_BASE}/events/track`, {
+      const response = await fetch(`${API_BASE}/events/track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -111,15 +126,21 @@ class EventTracker {
         })
       })
       
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      
       console.log('Session tracked successfully via events:', action)
     } catch (error) {
-      console.error('Session tracking error:', error)
+      console.warn('Session tracking failed (non-critical):', error.message)
     }
   }
 
   updateCartState() {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]')
     this.cartState.items = cart.reduce((total, item) => total + item.quantity, 0)
+    if (DISABLE_TRACKING) return
+    
     this.cartState.value = cart.reduce((total, item) => total + (item.price * item.quantity), 0)
   }
 
@@ -130,7 +151,7 @@ class EventTracker {
       const finalUserId = userId.startsWith('anonymous_') ? null : userId
       console.log(`Tracking event: ${eventType} for user: ${userId} (sending: ${finalUserId})`)
       
-      await fetch(`${API_BASE}/events/track`, {
+      const response = await fetch(`${API_BASE}/events/track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -141,8 +162,15 @@ class EventTracker {
           data: data
         })
       })
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.warn(`Event tracking failed (${response.status}):`, errorText)
+      }
     } catch (error) {
-      console.error('Event tracking error:', error)
+      console.warn('Event tracking error (non-critical):', error.message)
+    if (DISABLE_TRACKING) return
+    
     }
   }
 
@@ -154,7 +182,7 @@ class EventTracker {
       const finalUserId = userId.startsWith('anonymous_') ? null : userId
       console.log(`Tracking cart event: ${action} for user: ${userId} (sending: ${finalUserId})`)
       
-      await fetch(`${API_BASE}/events/cart`, {
+      const response = await fetch(`${API_BASE}/events/cart`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -167,41 +195,53 @@ class EventTracker {
           cart_total_value: this.cartState.value
         })
       })
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.warn(`Cart tracking failed (${response.status}):`, errorText)
+      }
     } catch (error) {
-      console.error('Cart tracking error:', error)
+      console.warn('Cart tracking error (non-critical):', error.message)
     }
   }
 
   // Event methods
   trackProductView(productId, productData = {}) {
+    if (DISABLE_TRACKING) return
     this.trackEvent('product_view', productId, productData)
   }
 
   trackSearch(query) {
+    if (DISABLE_TRACKING) return
     this.trackEvent('search', null, { search_query: query })
   }
 
   trackCartAdd(productId, productData = {}) {
+    if (DISABLE_TRACKING) return
     this.trackCartEvent('add', productId, 1)
     this.trackEvent('cart_add', productId, productData)
   }
 
   trackCartRemove(productId) {
+    if (DISABLE_TRACKING) return
     this.trackCartEvent('remove', productId, 1)
     this.trackEvent('cart_remove', productId)
   }
 
   trackPurchase(orderData) {
+    if (DISABLE_TRACKING) return
     this.trackEvent('purchase', null, orderData)
     this.trackSession('purchase', orderData)
   }
 
   trackPageView(page) {
+    if (DISABLE_TRACKING) return
     this.trackSession('page_view', { page })
   }
   
 
   endSession() {
+    if (DISABLE_TRACKING) return
     this.trackSession('end')
   }
 }

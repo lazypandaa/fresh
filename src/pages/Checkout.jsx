@@ -5,34 +5,14 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
-import { CreditCard, MapPin, User, Mail, Phone, CheckCircle, Plus } from 'lucide-react'
+import { CreditCard, MapPin, User, Mail, Phone, CheckCircle } from 'lucide-react'
 import { API_BASE } from '../config/api'
 
-const flattenBundlesToProducts = (bundles, cart) => {
-  const cartIds = new Set(cart.map(i => Number(i.product_id ?? i.id)))
-  const seen = new Set()
-  const products = []
-
-  for (const bundle of bundles) {
-    for (const p of bundle.products) {
-      if (cartIds.has(p.product_id)) continue
-      if (seen.has(p.product_id)) continue
-
-      seen.add(p.product_id)
-      products.push(p)
-    }
-  }
-
-  return products
-}
-
 export function Checkout() {
-  const { cart, cartTotal, clearCart, addToCart } = useCart()
+  const { cart, cartTotal, clearCart } = useCart()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const [recommendedBundles, setRecommendedBundles] = useState([])
-  const [loadingRecommendations, setLoadingRecommendations] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -80,71 +60,8 @@ export function Checkout() {
     }
   }, [])
 
-  // Fetch recommendations when cart changes
-  useEffect(() => {
-    if (cart.length === 0) {
-      setRecommendedBundles([])
-      return
-    }
-
-    const fetchRecommendations = async () => {
-      try {
-        setLoadingRecommendations(true)
-
-        const cartProductIds = cart.map(item =>
-          Number(item.product_id ?? item.id)
-        )
-
-        const res = await fetch(
-          `${API_BASE}/bundles/recommend`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              cart_product_ids: cartProductIds,
-              limit: 6
-            })
-          }
-        )
-
-        if (!res.ok) {
-          throw new Error(`Failed: ${res.status}`)
-        }
-
-        const data = await res.json()
-        const flattened = flattenBundlesToProducts(data, cart)
-        console.log('Recommended products loaded:', flattened)
-        setRecommendedBundles(flattened)
-
-      } catch (err) {
-        console.error('Recommendation error:', err)
-        setRecommendedBundles([])
-      } finally {
-        setLoadingRecommendations(false)
-      }
-    }
-
-    fetchRecommendations()
-  }, [cart])
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
-
-  const handleAddRecommended = (product) => {
-    console.log('Adding recommended product:', product)
-    const productToAdd = {
-      id: product.product_id,       // 🔥 important
-      name: product.name,
-      price: product.price ?? 0,    // fallback if not sent
-      image_url: product.image_url,
-      quantity: 1,
-      department: product.department ?? 'recommended'
-    }
-    console.log('Transformed product:', productToAdd)
-    addToCart(productToAdd)
   }
 
   const handleSubmit = async (e) => {
@@ -447,50 +364,6 @@ export function Checkout() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Recommended Products */}
-            {recommendedBundles.length > 0 && (
-              <Card className="border-2 mt-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">Add to Your Order</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {loadingRecommendations && <p className="text-sm text-gray-500">Loading recommendations...</p>}
-                    
-                    {!loadingRecommendations && recommendedBundles.slice(0, 4).map(product => (
-                      <div key={product.product_id} className="flex gap-3 items-center p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                        <img
-                          src={product.image_url}
-                          alt={product.name}
-                          className="w-12 h-12 rounded object-cover"
-                          onError={(e) => e.target.src = 'https://via.placeholder.com/48'}
-                        />
-                        
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm truncate">{product.name}</h4>
-                          <p className="text-xs text-gray-500">${product.price.toFixed(2)}</p>
-                        </div>
-
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            handleAddRecommended(product)
-                          }}
-                          className="flex-shrink-0 h-8 w-8 p-0"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </div>

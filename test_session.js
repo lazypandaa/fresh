@@ -1,5 +1,5 @@
 // Test session endpoint
-fetch('http://localhost:8000/api/track/session', {
+fetch('https://freshmart-backend.ambitiousground-569ca432.centralindia.azurecontainerapps.io/api/track/session', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
